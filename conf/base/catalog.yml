@@ -1,5 +1,116 @@
-# Here you can define all your data sets by using simple YAML syntax.
-#
-# Documentation for this file format can be found in the kedro docs under `Accessing data`
-# You can access the kedro docs by running `kedro docs`
+# 01_raw
+adj_train:
+  type: twitter_network.io.datasets.AdjListDataSet
+  filepath: data/01_raw/train.txt
+  n_rows: 1000
 
+# 02_intermediate
+
+G_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/G_train.pkl
+
+# 03_primary
+
+subG_train:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/subG_train.pkl
+
+edges_hidden:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/edges_hidden.pkl
+
+edges_fake:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/edges_hidden.pkl
+
+edges_test:
+  type: CSVLocalDataSet
+  filepath:  data/05_model_input/test-public.txt
+  load_args: {"sep": "\t"}
+
+# 04_features
+
+ra_generator:
+  type: PickleLocalDataSet
+  filepath: data/04_features/ra_generator.pkl
+
+jc_generator:
+  type: PickleLocalDataSet
+  filepath: data/04_features/jc_generator.pkl
+
+aa_generator:
+  type: PickleLocalDataSet
+  filepath: data/04_features/aa_generator.pkl
+
+pa_generator:
+  type: PickleLocalDataSet
+  filepath: data/04_features/pa_generator.pkl
+
+# 05_model_input
+
+## TRAINING
+
+X_train:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_train.pkl
+
+y_train:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/y_train.pkl
+
+## VALIDATION
+
+X_valid:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_valid.pkl
+
+y_valid:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/y_valid.pkl
+
+## TEST
+
+X_test:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_test.pkl
+
+# 06_models
+
+clf_nb:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_nb.pkl
+
+clf_lr:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_lr.pkl
+
+clf_svm:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_svm.pkl
+
+clf_rf:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_rf.pkl
+
+clf_ada:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_ada.pkl
+
+clf_nn:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_nn.pkl
+
+clf_vote:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_vote.pkl
+
+clf_meta:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_meta.pkl
+
+# 07_model_output
+
+predictions:
+  type: CSVLocalDataSet
+  filepath: data/07_model_output/predictions.csv

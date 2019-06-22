@@ -27,23 +27,9 @@
 # limitations under the License.
 """Pipeline construction."""
 
-from kedro.pipeline import Pipeline
-
-# Here you can define your data-driven pipeline by importing your functions
-# and adding them to the pipeline as follows:
-#
-# from nodes.data_wrangling import clean_data, compute_features
-#
-# pipeline = Pipeline([
-#     node(clean_data, 'customers', 'prepared_customers'),
-#     node(compute_features, 'prepared_customers', ['X_train', 'Y_train'])
-# ])
-#
-# Once you have your pipeline defined, you can run it from the root of your
-# project by calling:
-#
-# $ kedro run
-#
+from kedro.pipeline import Pipeline, node
+from twitter_network.nodes.setup import create_graph, hide_edges
+from kedro.pipeline.decorators import log_time
 
 
 def create_pipeline(**kwargs):
@@ -57,6 +43,17 @@ def create_pipeline(**kwargs):
 
     """
 
-    pipeline = Pipeline([])
+    setup_pipeline = Pipeline(
+        [
+            node(create_graph, inputs="adj_train", outputs="G_train", tags=["create"]),
+            node(
+                hide_edges,
+                inputs=dict(G="G_train", parameters="parameters"),
+                outputs=dict(subG="subG_train", hidden="edges_hidden"),
+                tags=["hide"],
+            ),
+        ],
+        name="setup",
+    ).decorate(log_time)
 
-    return pipeline
+    return setup_pipeline
