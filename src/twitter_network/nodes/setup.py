@@ -1,18 +1,22 @@
+"""Network graph setup."""
+
+import pandas as pd
+import numpy as np
 import networkx as nx
 from networkx.classes.graph import Graph
+from networkx.classes.digraph import DiGraph
 from itertools import product
 from copy import deepcopy
 from sklearn.model_selection import train_test_split
+from ast import literal_eval
 
 
-def create_graph(targets: dict) -> Graph:
-    """Initialise an undirected NetworkX graph from an edge list.
+def create_train_graph(targets: dict) -> Graph:
+    """Initialise an undirected NetworkX graph from an adjacency list.
 
         Args:
-            targets: an adjacency list as a dictionary, with source nodes as keys
+            targets: training adjacency list as a dictionary, with source nodes as keys
             and target nodes as values.
-
-            kwargs: keyword arguments to be passed to nx.Graph.
 
         Returns:
             A NetworkX graph object.
@@ -26,11 +30,47 @@ def create_graph(targets: dict) -> Graph:
     return G
 
 
-def hide_edges(G: Graph, parameters: dict) -> Graph:
+def create_train_digraph(targets: dict) -> DiGraph:
+    """Initialise an directed NetworkX graph from an adjacency list.
+
+        Args:
+            targets: training adjacency list as a dictionary, with source nodes as keys
+            and target nodes as values.
+
+        Returns:
+            A NetworkX graph object.
+
+    """
+    sources = list(targets.keys())
+    G = nx.DiGraph()
+    for s in sources:
+        edges = list(product([s], targets[s]))
+        G.add_edges_from(edges)
+    return G
+
+
+def get_test_edges(edges: pd.DataFrame) -> list:
+    """Extracts edges from test dataset.
+
+        Args:
+            edges: a Pandas dataframe with three columns (Id, Source and Sink), where:
+                - Id is a unique identifier for the edge.
+                - Source is the source node of the edge.
+                - Sink is the target node for the edge.
+
+        Returns:
+            A list of (Source, Sink) tuples representing the edges.
+
+    """
+    return [(str(x.Source), str(x.Sink)) for x in edges.itertuples()]
+
+
+def hide_edges(G: Graph, targets: dict, parameters: dict) -> Graph:
     """Remove a random subset of edges from an undirected graph.
 
         Args:
-            G: a NetworkX undirected graph object.
+            targets: training adjacency list as a dictionary, with source nodes as keys
+            and target nodes as values.
 
             parameters: parameters defined in parameters.yml.
 
@@ -40,10 +80,119 @@ def hide_edges(G: Graph, parameters: dict) -> Graph:
                 hidden: list of hidden edges.
 
     """
-    edges = list(G.edges)
-    edges_shown, edges_hidden = train_test_split(
-        edges, test_size=parameters["N_hidden"]
-    )
+    # Generate a random list of edges to hide
+    hidden = []
+    np.random.seed(parameters["seed"])
+    sources = list(targets.keys())
+    N_hidden = parameters["setup"]["N_hidden"]
+    sources_hidden = np.random.choice(sources, size=N_hidden)
+    while len(hidden) < N_hidden:
+        s = sources_hidden.pop()
+        subtargets = targets[s]
+        if len(subtargets) == 0:
+            sources_hidden.append(np.random.choice(sources))
+            continue
+        t = np.random.choice(subtargets)
+        if (s, t) not in hidden:
+            hidden.append((s, t))
+
+    # Create a subgraph by removing edges
     subG = deepcopy(G)
-    subG.remove_edges_from(edges_hidden)
-    return dict(subG=subG, hidden=edges_hidden)
+    subG.remove_edges_from(hidden)
+
+    return dict(subG=subG, hidden=hidden)
+
+
+def generate_fake_edges(
+    targets: dict, subG: Graph, hidden: list, test: list, parameters: dict
+) -> list:
+    """Randomly generates fake edges from source nodes to target nodes in a subgraph.
+
+        Args:
+            targets: training adjacency list as a dictionary, with source nodes as keys
+            and target nodes as values.
+
+            subG: a NetworkX graph object, which is a subgraph of the training network.
+
+            hidden: list of hidden edges.
+
+            test: list of edges in the test set.
+
+            parameters: parameters defined in parameters.yml.
+
+        Returns:
+            List of source nodes.
+
+    """
+    fakes = []
+    sources = list(targets.keys())
+    subtargets = subG.nodes
+    np.random.seed(parameters["seed"])
+    while len(fakes) < parameters["setup"]["N_fake"]:
+        s = np.random.choice(sources)
+        t = np.random.choice(subtargets)
+        if (
+            s != t  # no self loops
+            and not subG.has_edge(s, t)  # edge does not exist in subgraph
+            and not (s, t) in hidden  # edge has not been hidden
+            and not (s, t) in test  # edge is not in the test set
+            and not (s, t) in fakes  # edge has not already been created
+        ):
+            fakes.append((s, t))
+    return fakes
+
+
+def create_sample(hidden: list, fakes: list) -> pd.DataFrame:
+    """Creates a Pandas DataFrame with a random ordering of hidden edges and fake edges.
+
+    Args:
+        hidden: list of hidden edges.
+
+        fakes:  list of fake edges.
+
+    Returns:
+        Pandas dataframe with two columns:
+            edge: the edge as a tuple in the form (source, sink).
+            label: a binary variable taking the value 1 if the edge was hidden and 0
+            if it was fake.
+
+    """
+    sample = [(x, 1) for x in hidden] + [(x, 0) for x in fakes]
+    np.random.shuffle(sample)
+    return pd.DataFrame(sample, columns=["edge", "label"])
+
+
+def create_sample2(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.sample(frac=1)
+    df = df.rename(columns={"nodes": "edge"})
+    df.edge = [literal_eval(x) for x in df.edge]
+    df.edge = [(str(u), str(v)) for u, v in df.edge]
+    return df
+
+
+def split_sample(sample: pd.DataFrame, parameters: dict) -> list:
+    """Splits sample data into training and validation sets.
+
+    Args:
+        sample: Pandas dataframe containing sample edges and class labels.
+
+    Returns:
+        A list containing split data.
+
+    """
+    return train_test_split(sample, test_size=parameters["setup"]["valid_size"])
+
+
+def extract_classes(classes: pd.DataFrame) -> dict:
+    """Extracts edges and class labels from labelled training data.
+
+    Args:
+        classes: Pandas dataframe with two columns:
+            edge: the edge as a tuple in the form (source, sink).
+            valid: a binary variable taking the value 1 if the edge was hidden and 0
+            if it was fake.
+
+    Returns:
+        A dictionary containing lists for the edges and class labels.
+    """
+    return dict(edges=list(classes.edge), classes=classes.label)

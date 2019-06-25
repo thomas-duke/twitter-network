@@ -1,2 +1,43 @@
-N_hidden: 1000
-N_fake: 1000
+seed: 42
+setup:
+  N_hidden: 25000
+  N_fake: 25000
+  valid_size: 0.2
+models:
+  LR:
+    solver: "liblinear"
+  SVM:
+    kernel: "rbf"
+    gamma: "scale"
+    C: 10
+    probability: True
+  RF:
+    n_estimators: 500
+    random_state: 42
+  AB:
+    n_estimators: 500
+    random_state: 42
+  XG:
+    random_state: 42
+  NN:
+    layers:
+      depth: 3
+      dense:
+        activation: "tanh"
+        use_bias: True
+      output:
+        activation: "sigmoid"
+        use_bias: True
+    SGD:
+      lr: 0.01
+      decay: 1e-6
+      momentum: 0.9
+      nesterov: True
+    compile:
+      loss: "binary_crossentropy"
+      metrics: ["accuracy"]
+    fit:
+      epochs: 20
+      batch_size: 128
+predict:
+  probability: True

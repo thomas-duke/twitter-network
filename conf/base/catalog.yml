@@ -2,7 +2,21 @@
 adj_train:
   type: twitter_network.io.datasets.AdjListDataSet
   filepath: data/01_raw/train.txt
-  n_rows: 1000
+  n_rows: 20000
+
+adj_train_small:
+  type: twitter_network.io.datasets.AdjListDataSet
+  filepath: data/01_raw/train.txt
+  n_rows: 10
+
+test_public:
+  type: CSVLocalDataSet
+  filepath: data/01_raw/test-public.txt
+  load_args: {"sep": "\t"}
+
+small_train:
+  type: CSVLocalDataSet
+  filepath: data/01_raw/small_train.csv
 
 # 02_intermediate
 
@@ -10,42 +24,86 @@ G_train:
   type: PickleLocalDataSet
   filepath: data/02_intermediate/G_train.pkl
 
-# 03_primary
-
 subG_train:
   type: PickleLocalDataSet
-  filepath: data/03_primary/subG_train.pkl
+  filepath: data/02_intermediate/subG_train.pkl
+
+DiG_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/DiG_train.pkl
 
 edges_hidden:
   type: PickleLocalDataSet
-  filepath: data/03_primary/edges_hidden.pkl
+  filepath: data/02_intermediate/edges_hidden.pkl
 
 edges_fake:
   type: PickleLocalDataSet
-  filepath: data/03_primary/edges_hidden.pkl
+  filepath: data/02_intermediate/edges_fake.pkl
 
 edges_test:
-  type: CSVLocalDataSet
-  filepath:  data/05_model_input/test-public.txt
-  load_args: {"sep": "\t"}
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/edges_test.pkl
+
+edges_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/edges_train.pkl
+
+edges_valid:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/edges_valid.pkl
+
+edges_train2:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/edges_train2.pkl
+
+edges_valid2:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/edges_valid2.pkl
+
+# 03_primary
+
+sample_train:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/sample_train.pkl
+
+sample_valid:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/sample_valid.pkl
+
+sample_train2:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/sample_train2.pkl
+
+sample_valid2:
+  type: PickleLocalDataSet
+  filepath: data/03_primary/sample_valid2.pkl
 
 # 04_features
 
-ra_generator:
+non_stand_X_train:
   type: PickleLocalDataSet
-  filepath: data/04_features/ra_generator.pkl
+  filepath: data/04_features/non_stand_X_train.pkl
 
-jc_generator:
+non_stand_X_valid:
   type: PickleLocalDataSet
-  filepath: data/04_features/jc_generator.pkl
+  filepath: data/04_features/non_stand_X_valid.pkl
 
-aa_generator:
+non_stand_X_test:
   type: PickleLocalDataSet
-  filepath: data/04_features/aa_generator.pkl
+  filepath: data/04_features/non_stand_X_test.pkl
 
-pa_generator:
+non_stand_X_train2:
   type: PickleLocalDataSet
-  filepath: data/04_features/pa_generator.pkl
+  filepath: data/04_features/non_stand_X_train2.pkl
+
+non_stand_X_valid2:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_valid2.pkl
+
+non_stand_X_test2:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_test2.pkl
+
 
 # 05_model_input
 
@@ -55,9 +113,17 @@ X_train:
   type: PickleLocalDataSet
   filepath: data/05_model_input/X_train.pkl
 
+X_train2:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_train2.pkl
+
 y_train:
   type: PickleLocalDataSet
   filepath: data/05_model_input/y_train.pkl
+
+y_train2:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/y_train2.pkl
 
 ## VALIDATION
 
@@ -65,9 +131,17 @@ X_valid:
   type: PickleLocalDataSet
   filepath: data/05_model_input/X_valid.pkl
 
+X_valid2:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_valid2.pkl
+
 y_valid:
   type: PickleLocalDataSet
   filepath: data/05_model_input/y_valid.pkl
+
+y_valid2:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/y_valid2.pkl
 
 ## TEST
 
@@ -75,42 +149,102 @@ X_test:
   type: PickleLocalDataSet
   filepath: data/05_model_input/X_test.pkl
 
+X_test2:
+  type: PickleLocalDataSet
+  filepath: data/05_model_input/X_test2.pkl
+
 # 06_models
 
-clf_nb:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_nb.pkl
+## SET 1
 
-clf_lr:
+clf_NB:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_lr.pkl
+  filepath: data/06_models/clf_NB.pkl
 
-clf_svm:
+clf_LR:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_svm.pkl
+  filepath: data/06_models/clf_LR.pkl
 
-clf_rf:
+clf_SVM:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_rf.pkl
+  filepath: data/06_models/clf_SVM.pkl
 
-clf_ada:
+clf_RF:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_ada.pkl
+  filepath: data/06_models/clf_RF.pkl
 
-clf_nn:
+clf_AB:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_nn.pkl
+  filepath: data/06_models/clf_AB.pkl
 
-clf_vote:
+clf_XG:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_vote.pkl
+  filepath: data/06_models/clf_XG.pkl
 
-clf_meta:
+clf_NN:
+  type: twitter_network.io.datasets.KerasDataSet
+  filepath: data/06_models/clf_NN.pkl
+
+vote_hard:
   type: PickleLocalDataSet
-  filepath: data/06_models/clf_meta.pkl
+  filepath: data/06_models/vote_hard.pkl
+
+vote_soft:
+  type: PickleLocalDataSet
+  filepath: data/06_models/vote_soft.pkl
+
+meta_NN:
+  type: twitter_network.io.datasets.KerasDataSet
+  filepath: data/06_models/meta_NN.pkl
+
+## SET 2
+
+clf_NB2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_NB2.pkl
+
+clf_LR2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_LR2.pkl
+
+clf_SVM2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_SVM2.pkl
+
+clf_RF2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_RF2.pkl
+
+clf_AB2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_AB2.pkl
+
+clf_XG2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_XG2.pkl
+
+clf_NN2:
+  type: twitter_network.io.datasets.KerasDataSet
+  filepath: data/06_models/clf_NN2.pkl
+
+vote_hard2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/vote_hard2.pkl
+
+vote_soft2:
+  type: PickleLocalDataSet
+  filepath: data/06_models/vote_soft2.pkl
+
+meta_NN2:
+  type: twitter_network.io.datasets.KerasDataSet
+  filepath: data/06_models/meta_NN2.pkl
 
 # 07_model_output
 
 predictions:
   type: CSVLocalDataSet
   filepath: data/07_model_output/predictions.csv
+
+predictions2:
+  type: CSVLocalDataSet
+  filepath: data/07_model_output/predictions2.csv

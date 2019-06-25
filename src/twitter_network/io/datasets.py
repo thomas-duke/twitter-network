@@ -1,6 +1,7 @@
 from os.path import isfile
 from typing import Any, Union, Dict
 from collections import defaultdict
+from tensorflow.keras.models import Sequential, load_model
 
 import pandas as pd
 
@@ -8,7 +9,7 @@ from kedro.io import AbstractDataSet
 
 
 class AdjListDataSet(AbstractDataSet):
-    """Loads and saves data to a text file representing an adjacency list
+    """Loads and saves data to a tab-delimited text file representing an adjacency list
     for a directed graph, where the first element in each row is a source node
     and the remaining elements are target nodes.
 
@@ -26,7 +27,7 @@ class AdjListDataSet(AbstractDataSet):
         return dict(filepath=self._filepath, n_rows=self._n_rows)
 
     def __init__(self, filepath: str, n_rows: int) -> None:
-        """Creates a new instance of ``EdgeListDataSet`` pointing to a concrete
+        """Creates a new instance of ``AdjListDataSet`` pointing to a concrete
         filepath.
 
         Args:
@@ -58,6 +59,36 @@ class AdjListDataSet(AbstractDataSet):
             output = "\n".join(lines)
             f.write(output)
             f.close()
+
+    def _exists(self) -> bool:
+        return isfile(self._filepath)
+
+
+class KerasDataSet(AbstractDataSet):
+    """Loads and saves Keras neural network models to disk.
+    """
+
+    def _describe(self) -> Dict[str, Any]:
+        return dict(filepath=self._filepath)
+
+    def __init__(self, filepath: str) -> None:
+        """Creates a new instance of ``KerasDataSet`` pointing to a concrete
+        filepath.
+
+        Args:
+
+            filepath: path to a edge list file.
+
+        """
+        self._filepath = filepath
+
+    def _load(self) -> Sequential:
+        model = load_model(self._filepath)
+        return model
+
+    def _save(self, model: Sequential) -> None:
+        model.save(self._filepath)
+        del model
 
     def _exists(self) -> bool:
         return isfile(self._filepath)
