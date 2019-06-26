@@ -6,7 +6,7 @@ import networkx as nx
 from collections import defaultdict
 from networkx.classes.graph import Graph
 from networkx.algorithms import link_prediction as lp
-from sklearn.preprocessing import StandardScale
+from sklearn.preprocessing import StandardScaler
 
 
 def local_similarity(G, edges) -> pd.DataFrame:
@@ -29,7 +29,7 @@ def local_similarity(G, edges) -> pd.DataFrame:
         {
             "ra": [x for u, v, x in lp.resource_allocation_index(G, edges)],
             "jc": [x for u, v, x in lp.jaccard_coefficient(G, edges)],
-            "aa": [x for u, v, x in lp.adamic_adar_index(G, edges)],
+            # "aa": [x for u, v, x in lp.adamic_adar_index(G, edges)],
             "pa": [x for u, v, x in lp.preferential_attachment(G, edges)],
         }
     )

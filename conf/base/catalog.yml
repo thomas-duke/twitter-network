@@ -1,85 +1,83 @@
-# 01_raw
-adj_train:
+######################################################
+# 01: RAW
+######################################################
+
+# Public test data
+test_public:
+  type: CSVLocalDataSet
+  filepath: data/01_raw/test/test-public.txt
+  load_args: {"sep": "\t"}
+
+## Adjacency lists (public training data)
+adj_train_full:
   type: twitter_network.io.datasets.AdjListDataSet
-  filepath: data/01_raw/train.txt
+  filepath: data/01_raw/train/public/train.txt
   n_rows: 20000
 
 adj_train_small:
   type: twitter_network.io.datasets.AdjListDataSet
-  filepath: data/01_raw/train.txt
+  filepath: data/01_raw/train/public/train.txt
   n_rows: 10
 
-test_public:
+## Generated samples (edge tuples with labels)
+train_100:
   type: CSVLocalDataSet
-  filepath: data/01_raw/test-public.txt
-  load_args: {"sep": "\t"}
+  filepath: data/01_raw/train/samples/train_100.csv
 
-small_train:
+train_300:
   type: CSVLocalDataSet
-  filepath: data/01_raw/small_train.csv
+  filepath: data/01_raw/train/samples/train_300.csv
 
-# 02_intermediate
+train_600:
+  type: CSVLocalDataSet
+  filepath: data/01_raw/train/samples/train_600.csv
 
+######################################################
+# 02: INTERMEDIATE
+######################################################
+
+# NetworkX graph objects
+## Undirected
 G_train:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/G_train.pkl
-
-subG_train:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/subG_train.pkl
-
+  filepath: data/02_intermediate/graphs/G_train.pkl
+## Directed
 DiG_train:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/DiG_train.pkl
+  filepath: data/02_intermediate/graphs/DiG_train.pkl
 
-edges_hidden:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_hidden.pkl
-
-edges_fake:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_fake.pkl
-
+# Edge lists for training, validation and testing
 edges_test:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_test.pkl
+  filepath: data/02_intermediate/edges/edges_test.pkl
 
 edges_train:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_train.pkl
+  filepath: data/02_intermediate/edges/edges_train.pkl
 
 edges_valid:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_valid.pkl
+  filepath: data/02_intermediate/edges/edges_valid.pkl
 
-edges_train2:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_train2.pkl
+######################################################
+# 03: PRIMARY
+######################################################
 
-edges_valid2:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/edges_valid2.pkl
-
-# 03_primary
-
+# Training set
 sample_train:
   type: PickleLocalDataSet
   filepath: data/03_primary/sample_train.pkl
 
+# Validation set
 sample_valid:
   type: PickleLocalDataSet
   filepath: data/03_primary/sample_valid.pkl
 
-sample_train2:
-  type: PickleLocalDataSet
-  filepath: data/03_primary/sample_train2.pkl
+######################################################
+# 04: FEATURES
+######################################################
 
-sample_valid2:
-  type: PickleLocalDataSet
-  filepath: data/03_primary/sample_valid2.pkl
-
-# 04_features
-
+# Non-standardised features
 non_stand_X_train:
   type: PickleLocalDataSet
   filepath: data/04_features/non_stand_X_train.pkl
@@ -92,70 +90,36 @@ non_stand_X_test:
   type: PickleLocalDataSet
   filepath: data/04_features/non_stand_X_test.pkl
 
-non_stand_X_train2:
+######################################################
+# 05: MODEL INPUT
+######################################################
+
+# Test
+X_test:
   type: PickleLocalDataSet
-  filepath: data/04_features/non_stand_X_train2.pkl
+  filepath: data/05_model_input/X_test.pkl
 
-non_stand_X_valid2:
-  type: PickleLocalDataSet
-  filepath: data/04_features/non_stand_X_valid2.pkl
-
-non_stand_X_test2:
-  type: PickleLocalDataSet
-  filepath: data/04_features/non_stand_X_test2.pkl
-
-
-# 05_model_input
-
-## TRAINING
-
+# Training
 X_train:
   type: PickleLocalDataSet
   filepath: data/05_model_input/X_train.pkl
-
-X_train2:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/X_train2.pkl
 
 y_train:
   type: PickleLocalDataSet
   filepath: data/05_model_input/y_train.pkl
 
-y_train2:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/y_train2.pkl
-
-## VALIDATION
-
+# Validation
 X_valid:
   type: PickleLocalDataSet
   filepath: data/05_model_input/X_valid.pkl
-
-X_valid2:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/X_valid2.pkl
 
 y_valid:
   type: PickleLocalDataSet
   filepath: data/05_model_input/y_valid.pkl
 
-y_valid2:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/y_valid2.pkl
-
-## TEST
-
-X_test:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/X_test.pkl
-
-X_test2:
-  type: PickleLocalDataSet
-  filepath: data/05_model_input/X_test2.pkl
-
-# 06_models
-
-## SET 1
+######################################################
+# 06: MODELS
+######################################################
 
 clf_NB:
   type: PickleLocalDataSet
@@ -197,54 +161,10 @@ meta_NN:
   type: twitter_network.io.datasets.KerasDataSet
   filepath: data/06_models/meta_NN.pkl
 
-## SET 2
-
-clf_NB2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_NB2.pkl
-
-clf_LR2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_LR2.pkl
-
-clf_SVM2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_SVM2.pkl
-
-clf_RF2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_RF2.pkl
-
-clf_AB2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_AB2.pkl
-
-clf_XG2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/clf_XG2.pkl
-
-clf_NN2:
-  type: twitter_network.io.datasets.KerasDataSet
-  filepath: data/06_models/clf_NN2.pkl
-
-vote_hard2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/vote_hard2.pkl
-
-vote_soft2:
-  type: PickleLocalDataSet
-  filepath: data/06_models/vote_soft2.pkl
-
-meta_NN2:
-  type: twitter_network.io.datasets.KerasDataSet
-  filepath: data/06_models/meta_NN2.pkl
-
-# 07_model_output
+######################################################
+# 07: PREDICTION
+######################################################
 
 predictions:
   type: CSVLocalDataSet
   filepath: data/07_model_output/predictions.csv
-
-predictions2:
-  type: CSVLocalDataSet
-  filepath: data/07_model_output/predictions2.csv

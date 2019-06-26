@@ -1,7 +1,5 @@
 seed: 42
-setup:
-  N_hidden: 25000
-  N_fake: 25000
+sample:
   valid_size: 0.2
 models:
   LR:
