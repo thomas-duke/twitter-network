@@ -13,3 +13,5 @@ keras
 sklearn
 prettytable
 xgboost
+seaborn
+tqdm

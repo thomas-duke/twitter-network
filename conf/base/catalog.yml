@@ -17,36 +17,18 @@ adj_train_full:
 adj_train_small:
   type: twitter_network.io.datasets.AdjListDataSet
   filepath: data/01_raw/train/public/train.txt
-  n_rows: 10
+  n_rows: 5
 
-## Generated samples (edge tuples with labels)
-train_100:
-  type: CSVLocalDataSet
-  filepath: data/01_raw/train/samples/train_100.csv
-
-train_300:
-  type: CSVLocalDataSet
-  filepath: data/01_raw/train/samples/train_300.csv
-
-train_600:
-  type: CSVLocalDataSet
-  filepath: data/01_raw/train/samples/train_600.csv
 
 ######################################################
 # 02: INTERMEDIATE
 ######################################################
 
-# NetworkX graph objects
-## Undirected
-G_train:
+# Edges
+edges_all:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/graphs/G_train.pkl
-## Directed
-DiG_train:
-  type: PickleLocalDataSet
-  filepath: data/02_intermediate/graphs/DiG_train.pkl
+  filepath: data/02_intermediate/edges/edges_all.pkl
 
-# Edge lists for training, validation and testing
 edges_test:
   type: PickleLocalDataSet
   filepath: data/02_intermediate/edges/edges_test.pkl
@@ -58,6 +40,48 @@ edges_train:
 edges_valid:
   type: PickleLocalDataSet
   filepath: data/02_intermediate/edges/edges_valid.pkl
+
+# Graphs
+G_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/graphs/G_train.pkl
+
+DiG_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/graphs/DiG_train.pkl
+
+subG_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/graphs/subG_train.pkl
+
+subDiG_train:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/graphs/subDiG_train.pkl
+
+# Samples
+train_50_fake:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/samples/train_50/train_50_fake.pkl
+
+train_50_hidden:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/samples/train_50/train_50_hidden.pkl
+
+train_100:
+  type: CSVLocalDataSet
+  filepath: data/02_intermediate/samples/train_100.csv
+
+train_300:
+  type: CSVLocalDataSet
+  filepath: data/02_intermediate/samples/train_300.csv
+
+train_600:
+  type: CSVLocalDataSet
+  filepath: data/02_intermediate/samples/train_600.csv
+
+train_big:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/samples/train_big.pkl
 
 ######################################################
 # 03: PRIMARY

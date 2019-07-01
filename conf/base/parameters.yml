@@ -1,13 +1,19 @@
 seed: 42
-sample:
-  valid_size: 0.2
+setup:
+  N_hidden: 10
+  N_fake: 10
+  train_size: 100000
+  valid_size: False
+features:
+  subset: 200
+  connectivity:
+    cutoff: 100
 models:
   LR:
     solver: "liblinear"
   SVM:
-    kernel: "rbf"
+    kernel: "linear"
     gamma: "scale"
-    C: 10
     probability: True
   RF:
     n_estimators: 500
@@ -35,7 +41,7 @@ models:
       loss: "binary_crossentropy"
       metrics: ["accuracy"]
     fit:
-      epochs: 20
+      epochs: 30
       batch_size: 128
 predict:
   probability: True

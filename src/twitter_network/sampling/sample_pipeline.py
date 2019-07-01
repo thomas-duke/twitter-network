@@ -1,6 +1,5 @@
 ####################################################################################
-# SAMPLING (NOT RUN):
-# Generate a sample of true and fake edges from the training graph
+# 02: Sampling
 ####################################################################################
 sample = Pipeline(
     [
@@ -8,7 +7,7 @@ sample = Pipeline(
         # The number of hidden edges is N_hidden, as defined in the parameters file
         node(
             hide_edges,
-            inputs=dict(G="G_train", targets="targets_full", parameters="parameters"),
+            inputs=dict(G="G_train", edges="edges_all", parameters="parameters"),
             outputs=dict(subG="subG_train", hidden="edges_hidden"),
             tags=["hide_edges"],
         ),
@@ -17,7 +16,7 @@ sample = Pipeline(
         node(
             fake_edges,
             inputs=dict(
-                targets="adj_train",
+                targets="adj_train_full",
                 subG="subG_train",
                 hidden="edges_hidden",
                 test="edges_test",
@@ -30,7 +29,7 @@ sample = Pipeline(
         node(
             create_sample,
             inputs=dict(hidden="edges_hidden", fakes="edges_fake"),
-            outputs="sample",
+            outputs="sample_50",
             tags=["create_sample"],
         ),
         # Split the sample into training and validation sets
@@ -38,7 +37,7 @@ sample = Pipeline(
         # in the parameters file
         node(
             split_sample,
-            inputs=dict(sample="sample", parameters="parameters"),
+            inputs=dict(sample="sample_50", parameters="parameters"),
             outputs=["sample_train", "sample_valid"],
             tags=["split_sample"],
         ),

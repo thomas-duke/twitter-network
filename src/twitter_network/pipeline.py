@@ -2,7 +2,11 @@
 
 from kedro.pipeline import Pipeline, node
 from twitter_network.nodes.setup import *
-from twitter_network.nodes.features import *
+from twitter_network.nodes.features import (
+    extract_features,
+    compile_features,
+    rescale_features,
+)
 from twitter_network.nodes.models import *
 from kedro.pipeline.decorators import log_time
 
@@ -21,38 +25,67 @@ def create_pipeline(**kwargs):
     ####################################################################################
     # 01: Setup
     ####################################################################################
-    SAMPLE = "train_100"
-
     setup = Pipeline(
         [
-            ## NOT RUN
             # Create undirected graph from adjacency list
-            # node(
-            #     create_train_graph,
-            #     inputs="adj_train_full",
-            #     outputs="G_train",
-            #     tags=["graph", "undirected"],
-            # ),
+            node(
+                create_train_graph,
+                inputs="adj_train_full",
+                outputs="G_train",
+                tags=["graph", "undirected"],
+            ),
             # Create directed graph from adjacency list
-            # node(
-            #     create_train_digraph,
-            #     inputs="adj_train_full",
-            #     outputs="DiG_train",
-            #     tags=["graph", "directed"],
-            # ),
+            node(
+                create_train_digraph,
+                inputs="adj_train_full",
+                outputs="DiG_train",
+                tags=["graph", "directed"],
+            ),
             # Extract test edges from public test data
             node(
                 get_test_edges,
                 inputs="test_public",
                 outputs="edges_test",
-                tags=["sample", "test"],
+                tags=["edges", "edges_test"],
             ),
-            # Preprocess the sample files, converting from CSV to Pandas dataframe
+            # Extract edge list from directed graph
+            node(
+                get_all_edges,
+                inputs="DiG_train",
+                outputs="edges_all",
+                tags=["edges", "edges_all"],
+            ),
+        ],
+        name="setup",
+    )
+
+    ####################################################################################
+    # 02: Preprocessing
+    ####################################################################################
+    SAMPLE = "train_100"
+
+    preprocessing = Pipeline(
+        [
+            # Preprocess sample from CSV
             node(
                 preprocess_sample,
-                inputs=SAMPLE,
+                inputs=dict(df=SAMPLE, test="edges_test"),
                 outputs="sample",
-                tags=["sample", "import"],
+                tags=["sample"],
+            ),
+            # Create undirected subgraph by removing sample edges
+            node(
+                create_subgraph,
+                inputs=dict(G="G_train", edges="sample"),
+                outputs="subG_train",
+                tags=["sub", "subG"],
+            ),
+            # Create directed subgraph by removing sample edges
+            node(
+                create_subgraph,
+                inputs=dict(G="DiG_train", edges="sample"),
+                outputs="subDiG_train",
+                tags=["sub", "subDiG"],
             ),
             # Split sample into training and validation sets
             node(
@@ -75,21 +108,23 @@ def create_pipeline(**kwargs):
                 tags=["sample", "classes"],
             ),
         ],
-        name="setup",
+        name="preprocess",
     ).decorate(log_time)
 
     ####################################################################################
-    # 02: Feature generation
+    # 03: Feature engineering
     ####################################################################################
     features = Pipeline(
         [
             node(
-                calculate_similarity,
+                compile_features,
                 inputs=dict(
-                    G="G_train",
+                    G="subG_train",
+                    DiG="DiG_train",
                     edges_train="edges_train",
                     edges_valid="edges_valid",
                     edges_test="edges_test",
+                    parameters="parameters",
                 ),
                 outputs=["non_stand_X_train", "non_stand_X_valid", "non_stand_X_test"],
                 tags=["similarity"],
@@ -105,7 +140,7 @@ def create_pipeline(**kwargs):
     ).decorate(log_time)
 
     ####################################################################################
-    # 03: Modelling
+    # 04: Model training & evaluation
     ####################################################################################
     models = Pipeline(
         [
@@ -206,7 +241,7 @@ def create_pipeline(**kwargs):
     ).decorate(log_time)
 
     ####################################################################################
-    # 04: Prediction
+    # 05: Link prediction
     ####################################################################################
     CHAMPION = "clf_XG"
 
@@ -226,4 +261,4 @@ def create_pipeline(**kwargs):
         name="predict",
     ).decorate(log_time)
 
-    return setup + features + models + predictions
+    return setup + preprocessing + features + models + predictions

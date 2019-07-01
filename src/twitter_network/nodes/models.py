@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 import numpy as np
 from typing import Any
@@ -24,6 +25,7 @@ from tensorflow.keras.optimizers import SGD
 import logging
 import re
 from prettytable import PrettyTable
+from twitter_network.nodes.setup import red, blue
 
 
 def train_NB(
@@ -229,6 +231,7 @@ def train_NN(X_train: pd.DataFrame, y_train: pd.Series, parameters: dict) -> Seq
     clf_NN = Sequential()
     for _ in range(parameters["layers"]["depth"]):
         clf_NN.add(Dense(N_features, **parameters["layers"]["dense"]))
+        # TODO: Add dropout
     clf_NN.add(Dense(1, **parameters["layers"]["output"]))
 
     # Compile and train NN
@@ -300,8 +303,13 @@ def make_predictions(
 
     if parameters["predict"]["probability"] and type(clf) != Sequential:
         y_pred = [prob[1] for prob in clf.predict_proba(X_test)]
+        row_list = [
+            dict(Id=i + 1, Predictions=y_pred[i]) for i in range(len(edges_test))
+        ]
     else:
         y_pred = clf.predict(X_test)
-    row_list = [dict(Id=i + 1, Predictions=y_pred[i]) for i in range(len(edges_test))]
+        row_list = [
+            dict(Id=i + 1, Predictions=y_pred[i][0]) for i in range(len(edges_test))
+        ]
     output = pd.DataFrame(row_list)
     return output
