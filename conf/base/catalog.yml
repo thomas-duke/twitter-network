@@ -79,9 +79,9 @@ train_600:
   type: CSVLocalDataSet
   filepath: data/02_intermediate/samples/train_600.csv
 
-train_big:
+train_master:
   type: PickleLocalDataSet
-  filepath: data/02_intermediate/samples/train_big.pkl
+  filepath: data/02_intermediate/samples/train_master.pkl
 
 ######################################################
 # 03: PRIMARY
@@ -114,6 +114,52 @@ non_stand_X_test:
   type: PickleLocalDataSet
   filepath: data/04_features/non_stand_X_test.pkl
 
+# Transformed features
+non_stand_log_X_train:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_log_X_train.pkl
+
+non_stand_log_X_valid:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_log_X_valid.pkl
+
+non_stand_log_X_test:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_log_X_test.pkl
+
+# Transformed features
+stand_log_X_train:
+  type: PickleLocalDataSet
+  filepath: data/04_features/stand_log_X_train.pkl
+
+stand_log_X_valid:
+  type: PickleLocalDataSet
+  filepath: data/04_features/stand_log_X_valid.pkl
+
+stand_log_X_test:
+  type: PickleLocalDataSet
+  filepath: data/04_features/stand_log_X_test.pkl
+
+
+# Higher-order centrality measures
+page_rank:
+  type: PickleLocalDataSet
+  filepath: data/04_features/page_rank.p
+
+katz:
+  type: PickleLocalDataSet
+  filepath: data/04_features/katz.p
+
+# Feature selection
+included_features:
+    type: PickleLocalDataSet
+    filepath: data/04_features/included_features.pkl
+
+excluded_features:
+    type: PickleLocalDataSet
+    filepath: data/04_features/excluded_features.pkl
+
+
 ######################################################
 # 05: MODEL INPUT
 ######################################################
@@ -145,6 +191,10 @@ y_valid:
 # 06: MODELS
 ######################################################
 
+clf_Jacob:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_Jacob.pkl
+
 clf_NB:
   type: PickleLocalDataSet
   filepath: data/06_models/clf_NB.pkl
@@ -160,6 +210,22 @@ clf_SVM:
 clf_RF:
   type: PickleLocalDataSet
   filepath: data/06_models/clf_RF.pkl
+
+clf_ET:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_ET.pkl
+
+clf_GB:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_GB.pkl
+
+clf_IF:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_IF.pkl
+
+clf_HGB:
+  type: PickleLocalDataSet
+  filepath: data/06_models/clf_HGB.pkl
 
 clf_AB:
   type: PickleLocalDataSet

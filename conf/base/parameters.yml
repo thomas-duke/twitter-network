@@ -2,13 +2,26 @@ seed: 42
 setup:
   N_hidden: 10
   N_fake: 10
-  train_size: 100000
-  valid_size: False
+  train_size: False
+  valid_size: 0.2
 features:
-  subset: 200
+  subset: False
   connectivity:
     cutoff: 100
+  transformation:
+    skew_threshold: T0
+    inclusions: ["degree", "neighbors", "size"]
+    exclusions: ["cos", "jc",  "pa"]
+    drop_vars: True
+  selection:
+    skip: False
+    subset: 200000
+    score_func: "mi"
+    mode: "k_best"
+    param: 25
 models:
+  Jacob:
+    threshold: 0.2
   LR:
     solver: "liblinear"
   SVM:
@@ -18,14 +31,27 @@ models:
   RF:
     n_estimators: 500
     random_state: 42
-  AB:
+  ET:
     n_estimators: 500
+    random_state: 42
+  GB:
+    random_state: 42
+  IF:
+    n_estimators: 500
+    behaviour: "new"
+    contamination: "auto"
+    random_state: 42
+  HGB:
+    random_state: 42
+  AB:
+    n_estimators: 100
     random_state: 42
   XG:
     random_state: 42
   NN:
     layers:
-      depth: 3
+      depth: 5
+      dropout: 0.1
       dense:
         activation: "tanh"
         use_bias: True

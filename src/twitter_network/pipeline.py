@@ -2,11 +2,7 @@
 
 from kedro.pipeline import Pipeline, node
 from twitter_network.nodes.setup import *
-from twitter_network.nodes.features import (
-    extract_features,
-    compile_features,
-    rescale_features,
-)
+from twitter_network.nodes.features import *
 from twitter_network.nodes.models import *
 from kedro.pipeline.decorators import log_time
 
@@ -62,35 +58,35 @@ def create_pipeline(**kwargs):
     ####################################################################################
     # 02: Preprocessing
     ####################################################################################
-    SAMPLE = "train_100"
+    SAMPLE = "train_master"
 
     preprocessing = Pipeline(
         [
-            # Preprocess sample from CSV
-            node(
-                preprocess_sample,
-                inputs=dict(df=SAMPLE, test="edges_test"),
-                outputs="sample",
-                tags=["sample"],
-            ),
+            # # Preprocess sample from CSV
+            # node(
+            #     preprocess_sample,
+            #     inputs=dict(df=SAMPLE, test="edges_test"),
+            #     outputs="sample",
+            #     tags=["sample"],
+            # ),
             # Create undirected subgraph by removing sample edges
             node(
                 create_subgraph,
-                inputs=dict(G="G_train", edges="sample"),
+                inputs=dict(G="G_train", edges=SAMPLE),
                 outputs="subG_train",
                 tags=["sub", "subG"],
             ),
             # Create directed subgraph by removing sample edges
             node(
                 create_subgraph,
-                inputs=dict(G="DiG_train", edges="sample"),
+                inputs=dict(G="DiG_train", edges=SAMPLE),
                 outputs="subDiG_train",
                 tags=["sub", "subDiG"],
             ),
             # Split sample into training and validation sets
             node(
                 split_sample,
-                inputs=dict(sample="sample", parameters="parameters"),
+                inputs=dict(sample=SAMPLE, parameters="parameters"),
                 outputs=["sample_train", "sample_valid"],
                 tags=["sample", "split"],
             ),
@@ -120,20 +116,59 @@ def create_pipeline(**kwargs):
                 compile_features,
                 inputs=dict(
                     G="subG_train",
-                    DiG="DiG_train",
+                    DiG="subDiG_train",
                     edges_train="edges_train",
                     edges_valid="edges_valid",
                     edges_test="edges_test",
+                    page_rank="page_rank",
+                    katz="katz",
                     parameters="parameters",
                 ),
                 outputs=["non_stand_X_train", "non_stand_X_valid", "non_stand_X_test"],
-                tags=["similarity"],
+                tags=["compile"],
+            ),
+            node(
+                transform_features,
+                inputs=[
+                    "non_stand_X_train",
+                    "non_stand_X_valid",
+                    "non_stand_X_test",
+                    "parameters",
+                ],
+                outputs=[
+                    "non_stand_log_X_train",
+                    "non_stand_log_X_valid",
+                    "non_stand_log_X_test",
+                ],
+                tags=["transform", "log"],
             ),
             node(
                 rescale_features,
-                inputs=["non_stand_X_train", "non_stand_X_valid", "non_stand_X_test"],
-                outputs=["X_train", "X_valid", "X_test"],
-                tags=["scale"],
+                inputs=[
+                    "non_stand_log_X_train",
+                    "non_stand_log_X_valid",
+                    "non_stand_log_X_test",
+                ],
+                outputs=["stand_log_X_train", "stand_log_X_valid", "stand_log_X_test"],
+                tags=["transform", "scale"],
+            ),
+            node(
+                select_features,
+                inputs=[
+                    "stand_log_X_train",
+                    "stand_log_X_valid",
+                    "stand_log_X_test",
+                    "y_train",
+                    "parameters",
+                ],
+                outputs=dict(
+                    X_train_reduced="X_train",
+                    X_valid_reduced="X_valid",
+                    X_test_reduced="X_test",
+                    included="included_features",
+                    excluded="excluded_features",
+                ),
+                tags=["select"],
             ),
         ],
         name="features",
@@ -144,6 +179,12 @@ def create_pipeline(**kwargs):
     ####################################################################################
     models = Pipeline(
         [
+            node(
+                train_Jacob,
+                inputs=dict(parameters="parameters"),
+                outputs="clf_Jacob",
+                tags=["clf", "clf_Jacob"],
+            ),
             node(
                 train_NB,
                 inputs=dict(
@@ -175,6 +216,38 @@ def create_pipeline(**kwargs):
                 ),
                 outputs="clf_RF",
                 tags=["clf", "clf_RF"],
+            ),
+            node(
+                train_ET,
+                inputs=dict(
+                    X_train="X_train", y_train="y_train", parameters="parameters"
+                ),
+                outputs="clf_ET",
+                tags=["clf", "clf_ET"],
+            ),
+            node(
+                train_GB,
+                inputs=dict(
+                    X_train="X_train", y_train="y_train", parameters="parameters"
+                ),
+                outputs="clf_GB",
+                tags=["clf", "clf_GB"],
+            ),
+            node(
+                train_IF,
+                inputs=dict(
+                    X_train="X_train", y_train="y_train", parameters="parameters"
+                ),
+                outputs="clf_IF",
+                tags=["clf", "clf_IF"],
+            ),
+            node(
+                train_HGB,
+                inputs=dict(
+                    X_train="X_train", y_train="y_train", parameters="parameters"
+                ),
+                outputs="clf_HGB",
+                tags=["clf", "clf_HGB"],
             ),
             node(
                 train_AB,
@@ -210,6 +283,8 @@ def create_pipeline(**kwargs):
             #         "clf_LR",
             #         "clf_SVM",
             #         "clf_RF",
+            #         "clf_ET",
+            #         "clf_HGB",
             #         "clf_AB",
             #         "clf_XG",
             #     ],
@@ -219,19 +294,26 @@ def create_pipeline(**kwargs):
             node(
                 evaluate_models,
                 inputs=[
-                    # Test data
+                    ## Validation data
                     "X_valid",
                     "y_valid",
-                    # Models
-                    "clf_NB",
-                    "clf_LR",
-                    # "clf_SVM",
-                    "clf_RF",
-                    "clf_AB",
-                    "clf_XG",
-                    "clf_NN",
-                    # "vote_hard",
-                    # "vote_soft",
+                    ## Non-standardised
+                    "non_stand_X_valid",
+                    # ## Models
+                    # "clf_Jacob",
+                    # "clf_NB",
+                    # "clf_LR",
+                    # # "clf_SVM",
+                    # "clf_RF",
+                    # "clf_ET",
+                    # "clf_GB",
+                    # # "clf_IF",
+                    "clf_HGB",
+                    # "clf_AB",
+                    # "clf_XG",
+                    # "clf_NN",
+                    # # "vote_hard",
+                    # # "vote_soft",
                 ],
                 outputs=None,
                 tags=["eval"],
@@ -243,7 +325,7 @@ def create_pipeline(**kwargs):
     ####################################################################################
     # 05: Link prediction
     ####################################################################################
-    CHAMPION = "clf_XG"
+    CHAMPION = "clf_HGB"
 
     predictions = Pipeline(
         [
@@ -253,6 +335,7 @@ def create_pipeline(**kwargs):
                     clf=CHAMPION,
                     edges_test="edges_test",
                     X_test="X_test",
+                    non_stand_X_test="non_stand_X_test",
                     parameters="parameters",
                 ),
                 outputs="predictions",
