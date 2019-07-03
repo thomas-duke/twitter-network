@@ -9,24 +9,26 @@ features:
   connectivity:
     cutoff: 100
   transformation:
-    skew_threshold: T0
+    skew_threshold: 0
     inclusions: ["degree", "neighbors", "size"]
-    exclusions: ["cos", "jc",  "pa"]
+    exclusions: ["cos", "JC",  "PA", "RA", "AA"]
     drop_vars: True
   selection:
     skip: False
-    subset: 200000
-    score_func: "mi"
-    mode: "k_best"
-    param: 25
+    model:
+      C: 0.01
+      penalty: "l1"
+      dual: False
 models:
   Jacob:
-    threshold: 0.2
+    target: "RA_undirected"
+    threshold: "median"
   LR:
     solver: "liblinear"
   SVM:
-    kernel: "linear"
+    kernel: "rbf"
     gamma: "scale"
+    C: 10
     probability: True
   RF:
     n_estimators: 500
@@ -39,19 +41,19 @@ models:
   IF:
     n_estimators: 500
     behaviour: "new"
-    contamination: "auto"
+    contamination: 0.5
     random_state: 42
   HGB:
     random_state: 42
   AB:
-    n_estimators: 100
+    n_estimators: 500
     random_state: 42
   XG:
     random_state: 42
   NN:
     layers:
       depth: 5
-      dropout: 0.1
+      dropout: False
       dense:
         activation: "tanh"
         use_bias: True

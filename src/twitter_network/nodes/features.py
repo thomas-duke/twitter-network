@@ -11,6 +11,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from itertools import compress
 
+import networkx.algorithms.link_prediction as lp
 from networkx.classes.graph import Graph
 from networkx.classes.digraph import DiGraph
 from networkx.algorithms.approximation.connectivity import local_node_connectivity
@@ -36,45 +37,48 @@ def add_degree_features(G: DiGraph, df: pd.DataFrame) -> pd.DataFrame:
     source_out_degree = []
     source_bi_degree = []
     source_nbrs = []
-    # source_nbh_links = []
-    # # source_ego_nbh_links = []
-    # source_nbh_scc = []
-    # source_nbh_wcc = []
-    # # source_ego_nbh_scc = []
-    # # source_ego_nbh_wcc = []
 
     sink_in_degree = []
     sink_out_degree = []
     sink_bi_degree = []
     sink_nbrs = []
-    # sink_nbh_links = []
-    # # sink_ego_nbh_links = []
-    # sink_nbh_scc = []
-    # sink_nbh_wcc = []
-    # # sink_ego_nbh_scc = []
-    # # sink_ego_nbh_wcc = []
 
-    shared_neighbors = []
+    common_neighbors = []
     total_neighbors = []
     transitive_links = []
 
-    # inner_nbh_links = []
-    # inner_nbh_scc = []
-    # inner_nbh_wcc = []
-
-    jc_predecessors = []
-    jc_successors = []
-    jc_neighbors = []
+    JC_predecessors = []
+    JC_successors = []
+    JC_transient_in = []
+    JC_transient_out = []
+    JC_neighbors = []
 
     cos_predecessors = []
     cos_successors = []
+    cos_transient_in = []
+    cos_transient_out = []
     cos_neighbors = []
 
-    pa_predecessors = []
-    pa_successors = []
-    pa_neighbors = []
+    PA_predecessors = []
+    PA_successors = []
+    PA_transient_in = []
+    PA_transient_out = []
+    PA_neighbors = []
 
-    pref_attachment = []
+    RA_predecessors = []
+    RA_successors = []
+    RA_transient_in = []
+    RA_transient_out = []
+    RA_neighbors = []
+
+    AA_predecessors = []
+    AA_successors = []
+    AA_transient_in = []
+    AA_transient_out = []
+    AA_neighbors = []
+
+    hub_promoted_index = []
+    hub_suppressed_index = []
 
     for i, row in tqdm(df.iterrows()):
         source, sink = row["edge"]
@@ -109,44 +113,49 @@ def add_degree_features(G: DiGraph, df: pd.DataFrame) -> pd.DataFrame:
         sink_bi_degree.append(len(d_bi))
         sink_nbrs.append(len(d_nbrs))
 
-        shared_neighbors.append(len(s_nbrs.intersection(d_nbrs)))
+        common = len(s_nbrs.intersection(d_nbrs))
+        common_neighbors.append(common)
         total_neighbors.append(len(s_nbrs.union(d_nbrs)))
         transitive_links.append(len(s_out.intersection(d_in)))
 
-        jc_predecessors.append(jaccard_coeff(s_in, d_in))
-        jc_successors.append(jaccard_coeff(s_out, d_out))
-        jc_neighbors.append(jaccard_coeff(s_nbrs, d_nbrs))
+        JC_predecessors.append(jaccard_coeff(s_in, d_in))
+        JC_successors.append(jaccard_coeff(s_out, d_out))
+        JC_transient_in.append(jaccard_coeff(s_out, d_in))
+        JC_transient_out.append(jaccard_coeff(s_in, d_out))
+        JC_neighbors.append(jaccard_coeff(s_nbrs, d_nbrs))
 
         cos_predecessors.append(cosine_distance(s_in, d_in))
         cos_successors.append(cosine_distance(s_out, d_out))
+        cos_transient_in.append(cosine_distance(s_out, d_in))
+        cos_transient_out.append(cosine_distance(s_in, d_out))
         cos_neighbors.append(cosine_distance(s_nbrs, d_nbrs))
 
-        pa_predecessors.append(preferential_attachment(s_in, d_in))
-        pa_successors.append(preferential_attachment(s_out, d_out))
-        pa_neighbors.append(preferential_attachment(s_nbrs, d_nbrs))
+        PA_predecessors.append(preferential_attachment(s_in, d_in))
+        PA_successors.append(preferential_attachment(s_out, d_out))
+        PA_transient_in.append(preferential_attachment(s_out, d_in))
+        PA_transient_out.append(preferential_attachment(s_in, d_out))
+        PA_neighbors.append(preferential_attachment(s_nbrs, d_nbrs))
 
-        # source_nbh = G.subgraph(s_nbrs)
-        # # source_ego_nbh = G.subgraph(s_nbrs.union(source))
-        # source_nbh_links.append(source_nbh.number_of_edges())
-        # # source_ego_nbh_links.append(source_ego_nbh.number_of_edges())
-        # source_nbh_scc.append(number_strongly_connected_components(source_nbh))
-        # source_nbh_wcc.append(number_weakly_connected_components(source_nbh))
-        # # source_ego_nbh_scc.append(source_ego_nbh.number_strongly_connected_components())
-        # # source_ego_nbh_wcc.append(source_ego_nbh.number_weakly_connected_components())
+        RA_predecessors.append(directed_resource_allocation(s_in, d_in, G))
+        RA_successors.append(directed_resource_allocation(s_out, d_out, G))
+        RA_transient_in.append(directed_resource_allocation(s_out, d_in, G))
+        RA_transient_out.append(directed_resource_allocation(s_in, d_out, G))
+        RA_neighbors.append(directed_resource_allocation(s_nbrs, d_nbrs, G))
 
-        # sink_nbh = G.subgraph(d_nbrs)
-        # # sink_ego_nbh = G.subgraph(d_nbrs.union(sink))
-        # sink_nbh_links.append(sink_nbh.number_of_edges())
-        # # sink_ego_nbh_links.append(sink_ego_nbh.number_of_edges())
-        # sink_nbh_scc.append(number_strongly_connected_components(sink_nbh))
-        # sink_nbh_wcc.append(number_weakly_connected_components(source_nbh))
-        # # sink_ego_nbh_scc.append(sink_ego_nbh.number_strongly_connected_components())
-        # # sink_ego_nbh_wcc.append(sink_ego_nbh.number_weakly_connected_components())
-        #
-        # inner_nbh = G.subgraph(s_nbrs.union(d_nbrs))
-        # inner_nbh_links.append(inner_nbh.number_of_edges())
-        # inner_nbh_scc.append(number_strongly_connected_components(inner_nbh))
-        # inner_nbh_wcc.append(number_weakly_connected_components(inner_nbh))
+        AA_predecessors.append(directed_adamic_adar(s_in, d_in, G))
+        AA_successors.append(directed_adamic_adar(s_out, d_out, G))
+        AA_transient_in.append(directed_adamic_adar(s_out, d_in, G))
+        AA_transient_out.append(directed_adamic_adar(s_in, d_out, G))
+        AA_neighbors.append(directed_adamic_adar(s_nbrs, d_nbrs, G))
+
+        try:
+            hub_promoted_index.append(common / min([len(s_nbrs), len(d_nbrs)]))
+        except:
+            hub_promoted_index.append(0.0)
+        try:
+            hub_suppressed_index.append(common / max([len(s_nbrs), len(d_nbrs)]))
+        except:
+            hub_suppressed_index.append(0.0)
 
     df = pd.DataFrame(
         {
@@ -155,60 +164,59 @@ def add_degree_features(G: DiGraph, df: pd.DataFrame) -> pd.DataFrame:
             "source_out_degree": source_out_degree,
             "source_bi_degree": source_bi_degree,
             "source_neighbors": source_nbrs,
-            # "source_nbh_links": source_nbh_links,
-            # # "source_ego_nbh_links": source_ego_nbh_links,
-            # "source_nbh_scc": source_nbh_scc,
-            # "source_nbh_wcc": source_nbh_wcc,
-            # # "source_ego_nbh_scc": source_ego_nbh_scc,
-            # # "source_ego_nbh_wcc": source_ego_nbh_wcc,
             "sink_in_degree": sink_in_degree,
             "sink_out_degree": sink_out_degree,
             "sink_bi_degree": sink_out_degree,
             "sink_neighbors": sink_nbrs,
-            # "sink_nbh_links": sink_nbh_links,
-            # # "sink_ego_nbh_links": sink_ego_nbh_links,
-            # "sink_nbh_scc": sink_nbh_scc,
-            # "sink_nbh_wcc": sink_nbh_wcc,
-            # # "sink_ego_nbh_scc": sink_ego_nbh_scc,
-            # # "sink_ego_nbh_wcc": sink_ego_nbh_wcc,
-            "shared_neighbors": shared_neighbors,
+            "common_neighbors": common_neighbors,
             "total_neighbors": total_neighbors,
             "transitive_links": transitive_links,
-            # "inner_nbh_links": inner_nbh_links,
-            # "inner_nbh_scc": inner_nbh_scc,
-            # "inner_nbh_wcc": inner_nbh_wcc,
-            "jc_predecessors": jc_predecessors,
-            "jc_successors": jc_successors,
-            "jc_neighbors": jc_neighbors,
+            "JC_predecessors": JC_predecessors,
+            "JC_successors": JC_successors,
+            "JC_transient_in": JC_transient_in,
+            "JC_transient_out": JC_transient_out,
+            "JC_neighbors": JC_neighbors,
             "cos_predecessors": cos_predecessors,
             "cos_successors": cos_successors,
+            "cos_transient_in": cos_transient_in,
+            "cos_transient_out": cos_transient_out,
             "cos_neighbors": cos_neighbors,
-            "pa_predecessors": pa_predecessors,
-            "pa_successors": pa_successors,
-            "pa_neighbors": pa_neighbors,
+            "PA_predecessors": PA_predecessors,
+            "PA_successors": PA_successors,
+            "PA_transient_in": PA_transient_in,
+            "PA_transient_out": PA_transient_out,
+            "PA_neighbors": PA_neighbors,
+            "RA_predecessors": RA_predecessors,
+            "RA_successors": RA_successors,
+            "RA_transient_in": RA_transient_in,
+            "RA_transient_out": RA_transient_out,
+            "RA_neighbors": RA_neighbors,
+            "AA_predecessors": AA_predecessors,
+            "AA_successors": AA_successors,
+            "AA_transient_in": AA_transient_in,
+            "AA_transient_out": AA_transient_out,
+            "AA_neighbors": AA_neighbors,
+            "hub_promoted_index": hub_promoted_index,
+            "hub_suppressed_index": hub_suppressed_index,
         }
+    )
+
+    # Other indices
+    df["sorensen_index"] = 2 * (
+        df["common_neighbors"] / (df["source_neighbors"] + df["sink_neighbors"])
+    )
+    df["LHN_index"] = df["common_neighbors"] / (
+        df["source_neighbors"] * df["sink_neighbors"]
     )
 
     # Calculate degree densities
     df["source_in_density"] = df["source_in_degree"] / df["source_neighbors"]
     df["source_out_density"] = df["source_out_degree"] / df["source_neighbors"]
     df["source_bi_density"] = df["source_bi_degree"] / df["source_neighbors"]
-    # df["source_nbh_density"] = df["source_nbrs"] / df["source_nbh_links"]
-    # # df["source_ego_nbh_density"] = df["source_nbrs"] / df["source_ego_nbh_links"]
-    # df["source_avg_scc"] = df["source_nbrs"] / df["source_nbh_scc"]
-    # # df["source_avg_ego_scc"] = df["source_nbrs"] / df["source_ego_nbh_scc"]
-    # df["source_avg_wcc"] = df["source_nbrs"] / df["source_nbh_wcc"]
-    # # df["source_avg_ego_wcc"] = df["source_nbrs"] / df["source_ego_nbh_wcc"]
 
     df["sink_in_density"] = df["sink_in_degree"] / df["sink_neighbors"]
     df["sink_out_density"] = df["sink_out_degree"] / df["sink_neighbors"]
     df["sink_bi_density"] = df["sink_bi_degree"] / df["sink_neighbors"]
-    # df["sink_nbh_density"] = df["sink_nbrs"] / df["sink_nbh_links"]
-    # # df["sink_ego_nbh_density"] = df["source_nbrs"] / df["sink_ego_nbh_links"]
-    # df["sink_avg_scc"] = df["sink_nbrs"] / df["sink_nbh_scc"]
-    # # df["sink_avg_ego_scc"] = df["sink_nbrs"] / df["sink_ego_nbh_scc"]
-    # df["sink_avg_wcc"] = df["sink_nbrs"] / df["sink_nbh_wcc"]
-    # # df["sink_avg_ego_wcc"] = df["sink_nbrs"] / df["sink_ego_nbh_wcc"]
 
     return df
 
@@ -244,52 +252,42 @@ def preferential_attachment(x1, x2):
     return len(x1) * len(x2)
 
 
-def adjusted_adamic_adar_index(edge, G):
-    source, sink = edge
-    try:
-        source_successors = set(G.successors(source))
-        sink_successors = set(G.successors(sink))
-    except:
-        return 0
-    sum = 0.0
-    shared = source_successors.intersection(sink_successors)
-    try:
-        if len(shared) > 0:
-            for n in shared:
-                predecessors = list(G.predecessors(n))
-                sum += 1 / math.log(1 + len(predecessors))
-            return sum
-        else:
-            return 0
-    except:
-        return 0
-
-
-def resource_allocation(edge, G):
-    source, sink = edge
-    try:
-        source_successors = set(G.successors(source))
-        sink_successors = set(G.successors(sink))
-    except:
-        return 0
-    sum = 0.0
-    shared = source_successors.intersection(sink_successors)
-    try:
-        if len(shared) > 0:
-            for n in shared:
-                predecessors = list(G.predecessors(n))
+def directed_resource_allocation(x1, x2, G):
+    assert type(G) == DiGraph, "Graph must be directed."
+    shared = x1.intersection(x2)
+    if len(shared) > 0:
+        sum = 0.0
+        for n in shared:
+            try:
+                predecessors = set((G.predecessors(n)))
                 sum += 1 / len(predecessors)
-            return sum
-        else:
-            return 0
-    except:
-        return 0
+            except:
+                continue
+        return sum
+    else:
+        return 0.0
+
+
+def directed_adamic_adar(x1, x2, G):
+    assert type(G) == DiGraph, "Graph must be directed."
+    shared = x1.intersection(x2)
+    if len(shared) > 0:
+        sum = 0.0
+        for n in shared:
+            try:
+                predecessors = set((G.predecessors(n)))
+                sum += 1 / math.log(1 + len(predecessors))
+            except:
+                continue
+        return sum
+    else:
+        return 0.0
 
 
 # Connectivity
-def local_connectivity(edge, G, cutoff):
+def edge_connectivity(edge, G):
     source, sink = edge
-    return local_node_connectivity(G, source, sink, cutoff=cutoff)
+    return local_edge_connectivity(G, source, sink)
 
 
 def shortest_path(edge, G):
@@ -369,16 +367,6 @@ def sink_katz(edge, katz):
 
 
 # Clustering
-def source_triangles(edge, G):
-    source, sink = edge
-    return triangles(G, source)
-
-
-def sink_triangles(edge, G):
-    source, sink = edge
-    return triangles(G, sink)
-
-
 def source_clustering(edge, G):
     source, sink = edge
     return clustering(G, [source])[source]
@@ -387,10 +375,6 @@ def source_clustering(edge, G):
 def sink_clustering(edge, G):
     source, sink = edge
     return clustering(G, [sink])[sink]
-
-
-def avg_clustering(edge, G):
-    return average_clustering(G, edge)
 
 
 # Efficiency
@@ -456,9 +440,11 @@ def extract_features(
     if subset:
         edges = edge_list[:subset]
         log.warning(red("Calculating features on first {} edges.".format(subset)))
+        # pause()
     else:
         edges = edge_list
-        log.info(blue("Calculating features on {} edges.".format(len(edges))))
+        log.warning(red("Calculating features on all {} edges.".format(len(edges))))
+        # pause()
 
     # Calculate edge features
     try:
@@ -471,21 +457,16 @@ def extract_features(
         log.info(blue("Calculating degree features..."))
         df = add_degree_features(DiG, df)
 
-        # Similarity indices
-        log.info(blue("Calculating Adamic-Adar index..."))
-        df["adjusted_adamic_adar"] = df.edge.progress_apply(
-            adjusted_adamic_adar_index, G=DiG
-        )
-        log.info(blue("Calculating resource allocation..."))
-        df["resource_allocation"] = df.edge.progress_apply(resource_allocation, G=DiG)
-        # TOO SLOW
-        # Connectivity
-        # log.info(blue("Calculating connectivity..."))
-        # df["local_connectivity"] = df.edge.apply(
-        #     local_connectivity,
-        #     G=DiG,
-        #     cutoff=parameters["features"]["connectivity"]["cutoff"],
-        # )
+        # Undirected similarity
+        log.info(blue("Calculating undirected similarity..."))
+        df["RA_undirected"] = [
+            x for u, v, x in lp.resource_allocation_index(G, df.edge)
+        ]
+        df["JC_undirected"] = [x for u, v, x in lp.jaccard_coefficient(G, df.edge)]
+        df["AA_undirected"] = [x for u, v, x in lp.adamic_adar_index(G, df.edge)]
+        df["PA_undirected"] = [x for u, v, x in lp.preferential_attachment(G, df.edge)]
+
+        # Shortest path
         log.info(blue("Calculating shortest path..."))
         df["shortest_path"] = df.edge.progress_apply(shortest_path, G=DiG)
 
@@ -519,8 +500,25 @@ def extract_features(
         df["sink_out_centrality"] = df.edge.progress_apply(
             lambda e: out_centrality[e[1]]
         )
+        log.info(blue("Calculating Katz centrality..."))
+        df["source_katz"] = df.edge.progress_apply(source_katz, katz=katz)
+        df["sink_katz"] = df.edge.progress_apply(sink_katz, katz=katz)
 
-        # High order centrality measures
+        # Clustering
+        # log.info(blue("Calculating source clustering..."))
+        # X_train["source_clustering"] = X_train.edge.progress_apply(
+        #     source_clustering, G=DiG
+        # )
+        # X_valid["source_clustering"] = X_valid.edge.progress_apply(
+        #     source_clustering, G=DiG
+        # )
+        # X_test["source_clustering"] = X_test.edge.progress_apply(
+        #     source_clustering, G=DiG
+        # )
+        # log.info(blue("Calculating sink clustering..."))
+        # df["sink_clustering"] = df.edge.progress_apply(sink_clustering, G=DiG)
+
+        # PageRank
         log.info(blue("Calculating PageRank..."))
         df["source_page_rank"] = df.edge.progress_apply(
             source_page_rank, page_rank=page_rank
@@ -528,21 +526,6 @@ def extract_features(
         df["sink_page_rank"] = df.edge.progress_apply(
             sink_page_rank, page_rank=page_rank
         )
-
-        log.info(blue("Calculating Katz centrality..."))
-        df["source_katz"] = df.edge.progress_apply(source_katz, katz=katz)
-        df["sink_katz"] = df.edge.progress_apply(sink_katz, katz=katz)
-
-        # TOO SLOW
-        # Dispersion
-        # log.info(blue("Calculating link dispersion..."))
-        # df["link_dispersion"] = df.edge.progress_apply(link_dispersion, G=G)
-
-        # TOO SLOW
-        # Clustering
-        # log.info(blue("Calculating clustering coefficients..."))
-        # df["source_clustering"] = df.edge.progress_apply(source_clustering, G=DiG)
-        # df["sink_clustering"] = df.edge.progress_apply(sink_clustering, G=DiG)
 
         # Efficiency
         log.info(blue("Calculating link efficiency..."))
@@ -553,6 +536,26 @@ def extract_features(
         df["is_followed_back"] = df.edge.progress_apply(is_followed_back, G=DiG)
         df["source_reciprocity"] = df.edge.progress_apply(source_reciprocity, G=DiG)
         df["sink_reciprocity"] = df.edge.progress_apply(sink_reciprocity, G=DiG)
+
+        # # TOO SLOW
+        # # Connectivity
+        # log.info(blue("Calculating connectivity..."))
+        # C = parameters["features"]["connectivity"]["cutoff"]
+        # X_train["edge_connectivity"] = X_train.edge.progress_apply(
+        #     connectivity, G=DiG, cutoff=C
+        # )
+        # X_valid["edge_connectivity"] = X_valid.edge.progress_apply(
+        #     connectivity, G=DiG, cutoff=C
+        # )
+        # X_test["edge_connectivity"] = X_test.edge.progress_apply(
+        #     connectivity, G=DiG, cutoff=C
+        # )
+        #
+        # Dispersion
+        # log.info(blue("Calculating link dispersion..."))
+        # X_train["link_dispersion"] = X_train.edge.progress_apply(link_dispersion, G=G)
+        # X_valid["link_dispersion"] = X_valid.edge.progress_apply(link_dispersion, G=G)
+        # X_test["link_dispersion"] = X_test.edge.progress_apply(link_dispersion, G=G)
 
         # Remove edge column
         df = df.drop("edge", axis=1)
@@ -724,6 +727,11 @@ def transform_features(
             log_X_valid = log_X_valid.drop(var, axis=1)
             log_X_test = log_X_test.drop(var, axis=1)
 
+    # Reorder columns
+    log_X_train = log_X_train.reindex(sorted(log_X_train.columns), axis=1)
+    log_X_valid = log_X_valid.reindex(sorted(log_X_train.columns), axis=1)
+    log_X_test = log_X_test.reindex(sorted(log_X_train.columns), axis=1)
+
     return [log_X_train, log_X_valid, log_X_test]
 
 
@@ -771,9 +779,9 @@ def select_features(
     X_test: pd.DataFrame,
     y_train: pd.Series,
     parameters: dict,
+    model=None,
 ) -> list:
-    """Extracts the most relevent features from the sample by fitting a linear SVM on
-    the training data.
+    """Extracts the most relevent features from the sample.
 
     Args:
         X_train: training data.
@@ -785,7 +793,9 @@ def select_features(
         parameters: parameters defined in parameters.yml.
 
     Returns:
-        A list containing the trimmed training, validation and test data.
+        A dictionary containing:
+            The reduced training, validation and test data.
+            Lists of included and excluded variables.
     """
 
     log = logging.getLogger(__name__)
@@ -798,25 +808,16 @@ def select_features(
             X_train_reduced=X_train,
             X_valid_reduced=X_valid,
             X_test_reduced=X_test,
-            selected=X_train.columns,
+            included=X_train.columns,
             excluded=[],
         )
 
     # Get feature names
     features = list(X_train.columns)
 
-    # Score functions
-    funcs = {"chi2": fs.chi2, "f": fs.f_classif, "mi": fs.mutual_info_classif}
-
     # Instantiate the selector and fit it to the training data
-    selector = fs.GenericUnivariateSelect(
-        score_func=funcs[paras["score_func"]], mode=paras["mode"], param=paras["param"]
-    )
-    if paras["subset"]:
-        subset = paras["subset"]
-    else:
-        subset = len(X_train)
-    selector.fit(X_train[:subset], y_train[:subset])
+    lsvc = LinearSVC(**paras["model"]).fit(X_train, y_train)
+    selector = fs.SelectFromModel(lsvc, prefit=True)
 
     # Get feature mask
     mask = selector.get_support()

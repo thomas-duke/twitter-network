@@ -67,6 +67,10 @@ train_50_hidden:
   type: PickleLocalDataSet
   filepath: data/02_intermediate/samples/train_50/train_50_hidden.pkl
 
+train_small:
+  type: PickleLocalDataSet
+  filepath: data/02_intermediate/samples/train_small.pkl
+
 train_100:
   type: CSVLocalDataSet
   filepath: data/02_intermediate/samples/train_100.csv

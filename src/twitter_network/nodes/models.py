@@ -16,6 +16,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from xgboost.sklearn import XGBClassifier
+from sklearn.model_selection import RandomizedSearchCV
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
@@ -200,10 +201,37 @@ def train_XG(
         XGBoost classifier.
 
     """
-    clf_XG = XGBClassifier(**parameters["models"]["XG"])
-    clf_XG.fit(X_train, y_train)
+    log = logging.getLogger(__name__)
 
-    return clf_XG
+    # Parameters for grid search
+    param_grid = {
+        "max_depth": [3, 5],
+        "subsample": [0.8, 1],
+        "min_samples_split": [50, 100, 150],
+        "colsample_bytree": [0.8, 1],
+        "learning_rate": [0.05, 0.1, 0.15],
+        "gamma": [0, 0.0001],
+        "importance_type": ["gain", "cover"],
+        "n_estimators": [50, 100, 150],
+    }
+
+    default_params = {
+        "n_jobs": -1,
+        "random_state": 1234,
+        "verbosity": 0,
+        "objective": "binary:logistic",
+    }
+
+    # run random search
+    log.info(blue("Tuning XGBoost hyperparameters..."))
+    xgb_search = XGBClassifier(**default_params)
+    xgb_random = RandomizedSearchCV(
+        xgb_search, param_distributions=param_grid, cv=5, iid=False
+    )
+    xgb_random.fit(X_train, y_train)
+    log.info(blue("Best estimator:\n" + str(xgb_random.best_estimator_)))
+
+    return xgb_random
 
 
 def train_NN(X_train: pd.DataFrame, y_train: pd.Series, parameters: dict) -> Sequential:
@@ -317,8 +345,9 @@ def train_NN(X_train: pd.DataFrame, y_train: pd.Series, parameters: dict) -> Seq
 
 
 class Jacob:
-    def __init__(self, threshold) -> None:
+    def __init__(self, threshold, target) -> None:
         self.threshold = threshold
+        self.target = target
 
     def smooth_soft(self, x: float) -> float:
         if x > self.threshold:
@@ -333,14 +362,25 @@ class Jacob:
             return 0.0
 
     def predict_proba(self, X_test: pd.DataFrame) -> list:
-        return [self.smooth_soft(x) for x in X_test.resource_allocation.values]
+        return [self.smooth_soft(x) for x in X_test[self.target].values]
 
     def predict(self, X_test: pd.DataFrame) -> list:
-        return [self.smooth_hard(x) for x in X_test.resource_allocation.values]
+        return [self.smooth_hard(x) for x in X_test[self.target].values]
 
 
-def train_Jacob(parameters: dict) -> Jacob:
-    clf_Jacob = Jacob(threshold=parameters["models"]["Jacob"]["threshold"])
+def train_Jacob(X_train: pd.DataFrame, parameters: dict) -> Jacob:
+    # Set threshold parameter
+    threshold = parameters["models"]["Jacob"]["threshold"]
+    target = parameters["models"]["Jacob"]["target"]
+    if threshold == "median":
+        # Get the median value of the target variable
+        threshold = np.median(X_train[target])
+    elif type(threshold) == float:
+        pass
+    else:
+        raise TypeError("Jacob's threshold must be one of: float or 'median'.")
+    # Initialise instance of Jacob
+    clf_Jacob = Jacob(threshold=threshold, target=target)
     return clf_Jacob
 
 
