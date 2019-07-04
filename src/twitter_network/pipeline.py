@@ -128,11 +128,45 @@ def create_pipeline(**kwargs):
                 tags=["compile"],
             ),
             node(
+                calculate_clustering,
+                inputs=dict(
+                    G="subG_train",
+                    DiG="subDiG_train",
+                    edges_train="edges_train",
+                    edges_valid="edges_valid",
+                    edges_test="edges_test",
+                    parameters="parameters",
+                ),
+                outputs=[
+                    "non_stand_X_train2",
+                    "non_stand_X_valid2",
+                    "non_stand_X_test2",
+                ],
+                tags=["compile", "cluster"],
+            ),
+            node(
+                join_feature_matrices,
+                inputs=dict(
+                    X_train1="non_stand_X_train",
+                    X_valid1="non_stand_X_valid",
+                    X_test1="non_stand_X_test",
+                    X_train2="non_stand_X_train2",
+                    X_valid2="non_stand_X_valid2",
+                    X_test2="non_stand_X_test2",
+                ),
+                outputs=[
+                    "non_stand_X_train3",
+                    "non_stand_X_valid3",
+                    "non_stand_X_test3",
+                ],
+                tags=["compile", "transform", "join"],
+            ),
+            node(
                 transform_features,
                 inputs=[
-                    "non_stand_X_train",
-                    "non_stand_X_valid",
-                    "non_stand_X_test",
+                    "non_stand_X_train3",
+                    "non_stand_X_valid3",
+                    "non_stand_X_test3",
                     "parameters",
                 ],
                 outputs=[
@@ -193,22 +227,22 @@ def create_pipeline(**kwargs):
                 outputs="clf_NB",
                 tags=["clf", "clf_NB"],
             ),
-            node(
-                train_LR,
-                inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
-                ),
-                outputs="clf_LR",
-                tags=["clf", "clf_LR"],
-            ),
-            node(
-                train_SVM,
-                inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
-                ),
-                outputs="clf_SVM",
-                tags=["clf", "clf_SVM"],
-            ),
+            # node(
+            #     train_LR,
+            #     inputs=dict(
+            #         X_train="X_train", y_train="y_train", parameters="parameters"
+            #     ),
+            #     outputs="clf_LR",
+            #     tags=["clf", "clf_LR"],
+            # ),
+            # node(
+            #     train_SVM,
+            #     inputs=dict(
+            #         X_train="X_train", y_train="y_train", parameters="parameters"
+            #     ),
+            #     outputs="clf_SVM",
+            #     tags=["clf", "clf_SVM"],
+            # ),
             node(
                 train_RF,
                 inputs=dict(
@@ -217,22 +251,22 @@ def create_pipeline(**kwargs):
                 outputs="clf_RF",
                 tags=["clf", "clf_RF"],
             ),
-            node(
-                train_ET,
-                inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
-                ),
-                outputs="clf_ET",
-                tags=["clf", "clf_ET"],
-            ),
-            node(
-                train_GB,
-                inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
-                ),
-                outputs="clf_GB",
-                tags=["clf", "clf_GB"],
-            ),
+            # node(
+            #     train_ET,
+            #     inputs=dict(
+            #         X_train="X_train", y_train="y_train", parameters="parameters"
+            #     ),
+            #     outputs="clf_ET",
+            #     tags=["clf", "clf_ET"],
+            # ),
+            # node(
+            #     train_GB,
+            #     inputs=dict(
+            #         X_train="X_train", y_train="y_train", parameters="parameters"
+            #     ),
+            #     outputs="clf_GB",
+            #     tags=["clf", "clf_GB"],
+            # ),
             # node(
             #     train_IF,
             #     inputs=dict(
@@ -260,38 +294,41 @@ def create_pipeline(**kwargs):
             node(
                 train_XG,
                 inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
+                    non_stand_X_train="non_stand_X_train",
+                    X_train="X_train",
+                    y_train="y_train",
+                    parameters="parameters",
                 ),
                 outputs="clf_XG",
                 tags=["clf", "clf_XG"],
             ),
-            node(
-                train_NN,
-                inputs=dict(
-                    X_train="X_train", y_train="y_train", parameters="parameters"
-                ),
-                outputs="clf_NN",
-                tags=["clf", "clf_NN"],
-            ),
-            node(
-                train_voting,
-                inputs=[
-                    # Training data
-                    "X_train",
-                    "y_train",
-                    # Panel members
-                    # "clf_NB",
-                    "clf_LR",
-                    "clf_SVM",
-                    "clf_RF",
-                    "clf_ET",
-                    "clf_HGB",
-                    "clf_AB",
-                    "clf_XG",
-                ],
-                outputs=["vote_hard", "vote_soft"],
-                tags=["clf", "meta", "vote"],
-            ),
+            # node(
+            #     train_NN,
+            #     inputs=dict(
+            #         X_train="X_train", y_train="y_train", parameters="parameters"
+            #     ),
+            #     outputs="clf_NN",
+            #     tags=["clf", "clf_NN"],
+            # ),
+            # node(
+            #     train_voting,
+            #     inputs=[
+            #         # Training data
+            #         "X_train",
+            #         "y_train",
+            #         # Panel members
+            #         # "clf_NB",
+            #         "clf_LR",
+            #         "clf_SVM",
+            #         "clf_RF",
+            #         "clf_ET",
+            #         "clf_HGB",
+            #         "clf_AB",
+            #         "clf_XG",
+            #     ],
+            #     outputs=["vote_hard", "vote_soft"],
+            #     tags=["clf", "meta", "vote"],
+            # ),
             node(
                 evaluate_models,
                 inputs=[
@@ -303,18 +340,18 @@ def create_pipeline(**kwargs):
                     ## Models
                     "clf_Jacob",
                     "clf_NB",
-                    "clf_LR",
-                    "clf_SVM",
+                    # "clf_LR",
+                    # "clf_SVM",
                     "clf_RF",
-                    "clf_ET",
-                    "clf_GB",
+                    # "clf_ET",
+                    # "clf_GB",
                     # "clf_IF",
                     "clf_HGB",
                     "clf_AB",
                     "clf_XG",
-                    "clf_NN",
-                    "vote_hard",
-                    "vote_soft",
+                    # "clf_NN",
+                    # "vote_hard",
+                    # "vote_soft",
                 ],
                 outputs=None,
                 tags=["eval"],

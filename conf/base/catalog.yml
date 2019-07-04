@@ -118,6 +118,30 @@ non_stand_X_test:
   type: PickleLocalDataSet
   filepath: data/04_features/non_stand_X_test.pkl
 
+non_stand_X_train2:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_train2.pkl
+
+non_stand_X_valid2:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_valid2.pkl
+
+non_stand_X_test2:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_test2.pkl
+
+non_stand_X_train3:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_train3.pkl
+
+non_stand_X_valid3:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_valid3.pkl
+
+non_stand_X_test3:
+  type: PickleLocalDataSet
+  filepath: data/04_features/non_stand_X_test3.pkl
+
 # Transformed features
 non_stand_log_X_train:
   type: PickleLocalDataSet

@@ -613,6 +613,73 @@ def compile_features(
     ]
 
 
+def calculate_clustering(
+    G: Graph,
+    DiG: DiGraph,
+    edges_train: list,
+    edges_valid: list,
+    edges_test: list,
+    parameters: dict,
+) -> list:
+    # Initialise logger and progress bar
+    log = logging.getLogger(__name__)
+    tqdm.pandas()
+
+    # Initialise feature matrix
+    log.info(blue("Initialising feature matrices..."))
+    X_train = pd.DataFrame(dict(edge=edges_train))
+    X_valid = pd.DataFrame(dict(edge=edges_valid))
+    X_test = pd.DataFrame(dict(edge=edges_test))
+
+    # Clustering
+    # log.info(blue("Calculating source clustering..."))
+    # X_train["source_clustering"] = X_train.edge.progress_apply(source_clustering, G=DiG)
+    # X_valid["source_clustering"] = X_valid.edge.progress_apply(source_clustering, G=DiG)
+    # X_test["source_clustering"] = X_test.edge.progress_apply(source_clustering, G=DiG)
+    log.info(blue("Calculating sink clustering..."))
+    X_train["sink_clustering"] = X_train.edge.progress_apply(sink_clustering, G=DiG)
+    X_valid["sink_clustering"] = X_valid.edge.progress_apply(sink_clustering, G=DiG)
+    X_test["sink_clustering"] = X_test.edge.progress_apply(sink_clustering, G=DiG)
+
+    # Connectivity
+    # log.info(blue("Calculating connectivity..."))
+    # C = parameters["features"]["connectivity"]["cutoff"]
+    # X_train["edge_connectivity"] = X_train.edge.progress_apply(
+    #     connectivity, G=DiG, cutoff=C
+    # )
+    # X_valid["edge_connectivity"] = X_valid.edge.progress_apply(
+    #     connectivity, G=DiG, cutoff=C
+    # )
+    # X_test["edge_connectivity"] = X_test.edge.progress_apply(
+    #     connectivity, G=DiG, cutoff=C
+    # )
+
+    # Dispersion
+    # log.info(blue("Calculating link dispersion..."))
+    # X_train["link_dispersion"] = X_train.edge.progress_apply(link_dispersion, G=G)
+    # X_valid["link_dispersion"] = X_valid.edge.progress_apply(link_dispersion, G=G)
+    # X_test["link_dispersion"] = X_test.edge.progress_apply(link_dispersion, G=G)
+
+    return [X_train, X_valid, X_test]
+
+
+def join_feature_matrices(
+    X_train1: pd.DataFrame,
+    X_valid1: pd.DataFrame,
+    X_test1: pd.DataFrame,
+    X_train2: pd.DataFrame,
+    X_valid2: pd.DataFrame,
+    X_test2: pd.DataFrame,
+) -> list:
+    X_train3 = X_train1
+    X_train3["sink_clustering"] = X_train2
+    X_valid3 = X_valid1
+    X_valid3["sink_clustering"] = X_valid2
+    X_test3 = X_test1
+    X_test3["sink_clustering"] = X_test2
+    return [X_train3, X_valid3, X_test3]
+
+
 def log_offset(X):
     return np.log(1 + X)
 
@@ -815,9 +882,13 @@ def select_features(
     # Get feature names
     features = list(X_train.columns)
 
-    # Instantiate the selector and fit it to the training data
-    lsvc = LinearSVC(**paras["model"]).fit(X_train, y_train)
-    selector = fs.SelectFromModel(lsvc, prefit=True)
+    if paras["type"] == "model":
+        # Instantiate the selector and fit it to the training data
+        lsvc = LinearSVC(**paras["model"]).fit(X_train, y_train)
+        selector = fs.SelectFromModel(lsvc, prefit=True)
+    elif paras["type"] == "k_best":
+        selector = fs.SelectKBest(fs.mutual_info_classif, k=paras["k_best"]["k"])
+        selector.fit(X_train, y_train)
 
     # Get feature mask
     mask = selector.get_support()

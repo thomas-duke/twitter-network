@@ -2,10 +2,12 @@ import logging
 import pandas as pd
 import numpy as np
 from typing import Any
+from itertools import compress
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.experimental import enable_hist_gradient_boosting
+from sklearn.feature_selection import RFE, RFECV
 from sklearn.ensemble import *
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import (
@@ -164,8 +166,26 @@ def train_HGB(
         HGB classifier.
 
     """
+
+    log = logging.getLogger(__name__)
+
+    # # Recursive feature elimination on HGB
+    # clf_HGB = HistGradientBoostingClassifier(**parameters["models"]["HGB"])
+    # rfe = RFE(estimator=clf_HGB, n_features_to_select=30, step=1)
+    # rfe.fit(X_train, y_train)
+    # print()
+    #
+    # # Get selected variables
+    # features = list(X_train.columns)
+    # mask = rfe.support_
+    # included = list(compress(features, mask))
+    # excluded = list(set(features) - set(included))
+    # log.info(blue("Included {} variables: {}".format(len(included), included)))
+    # log.info(blue("Excluded {} variables: {}".format(len(excluded), excluded)))
+
     clf_HGB = HistGradientBoostingClassifier(**parameters["models"]["HGB"])
     clf_HGB.fit(X_train, y_train)
+
     return clf_HGB
 
 
@@ -189,8 +209,11 @@ def train_AB(
 
 
 def train_XG(
-    X_train: pd.DataFrame, y_train: pd.Series, parameters: dict
-) -> AdaBoostClassifier:
+    non_stand_X_train: pd.DataFrame,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    parameters: dict,
+) -> XGBClassifier:
     """Fits an XGBoost classifier.
 
     Args:
@@ -203,35 +226,76 @@ def train_XG(
     """
     log = logging.getLogger(__name__)
 
-    # Parameters for grid search
-    param_grid = {
-        "max_depth": [3, 5],
-        "subsample": [0.8, 1],
-        "min_samples_split": [50, 100, 150],
-        "colsample_bytree": [0.8, 1],
-        "learning_rate": [0.05, 0.1, 0.15],
-        "gamma": [0, 0.0001],
-        "importance_type": ["gain", "cover"],
-        "n_estimators": [50, 100, 150],
-    }
+    # # Parameters for grid search
+    # param_grid = {
+    #     "max_depth": [3, 5],
+    #     "subsample": [0.8, 1],
+    #     "min_samples_split": [50, 100, 150],
+    #     "colsample_bytree": [0.8, 1],
+    #     "learning_rate": [0.05, 0.1, 0.15],
+    #     "gamma": [0, 0.0001],
+    #     "importance_type": ["gain", "cover"],
+    #     "n_estimators": [50, 100, 150],
+    # }
+    #
+    # default_params = {
+    #     "n_jobs": -1,
+    #     "random_state": 1234,
+    #     "verbosity": 0,
+    #     "objective": "binary:logistic",
+    # }
 
-    default_params = {
-        "n_jobs": -1,
-        "random_state": 1234,
-        "verbosity": 0,
-        "objective": "binary:logistic",
-    }
+    # # run random search
+    # log.info(blue("Tuning XGBoost hyperparameters..."))
+    # xgb_search = XGBClassifier(**default_params)
+    # xgb_random = RandomizedSearchCV(
+    #     xgb_search, param_distributions=param_grid, cv=5, iid=False
+    # )
+    # xgb_random.fit(X_train, y_train)
+    # log.info(blue("Best estimator:\n" + str(xgb_random.best_estimator_)))
 
-    # run random search
-    log.info(blue("Tuning XGBoost hyperparameters..."))
-    xgb_search = XGBClassifier(**default_params)
-    xgb_random = RandomizedSearchCV(
-        xgb_search, param_distributions=param_grid, cv=5, iid=False
+    # Recursive feature elimination on XG
+    # log.info(blue("Running recursive feature elimination..."))
+    tuned_params = dict(
+        base_score=0.5,
+        booster="gbtree",
+        colsample_bylevel=1,
+        colsample_bynode=1,
+        colsample_bytree=1,
+        gamma=0.0001,
+        learning_rate=0.1,
+        max_delta_step=0,
+        max_depth=5,
+        min_child_weight=1,
+        min_samples_split=50,
+        missing=None,
+        n_estimators=150,
+        n_jobs=-1,
+        nthread=None,
+        objective="binary:logistic",
+        random_state=1234,
+        reg_alpha=0,
+        reg_lambda=1,
+        scale_pos_weight=1,
+        seed=None,
+        silent=None,
+        subsample=1,
+        verbosity=0,
     )
-    xgb_random.fit(X_train, y_train)
-    log.info(blue("Best estimator:\n" + str(xgb_random.best_estimator_)))
+    xgb_tuned = XGBClassifier(**tuned_params)
+    xgb_tuned.fit(X_train, y_train)
+    # rfe = RFE(estimator=xgb_tuned, n_features_to_select=30, step=1, verbose=2)
+    # rfe.fit(X_train, y_train)
 
-    return xgb_random
+    # # Get selected variables
+    # features = list(non_stand_X_train.columns)
+    # mask = rfe.support_
+    # included = list(compress(features, mask))
+    # excluded = list(set(features) - set(included))
+    # log.info(blue("Included {} variables: {}".format(len(included), included)))
+    # log.info(blue("Excluded {} variables: {}".format(len(excluded), excluded)))
+
+    return xgb_tuned
 
 
 def train_NN(X_train: pd.DataFrame, y_train: pd.Series, parameters: dict) -> Sequential:

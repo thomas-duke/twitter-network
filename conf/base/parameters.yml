@@ -15,6 +15,9 @@ features:
     drop_vars: True
   selection:
     skip: False
+    type: "model"
+    k_best:
+      k: 30
     model:
       C: 0.01
       penalty: "l1"
@@ -44,6 +47,7 @@ models:
     contamination: 0.5
     random_state: 42
   HGB:
+    loss: "binary_crossentropy"
     random_state: 42
   AB:
     n_estimators: 500
